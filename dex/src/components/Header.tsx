@@ -2,9 +2,9 @@ import React from 'react'
 import Logo from "../moralis-logo.svg";
 import Eth from "../eth.svg";
 import { Link } from "react-router-dom";
-function Header(props) {
+function Header(props: { address: any; isConnected: any; handleConnectWallet: any; }) {
 
-  const {address, isConnected, connect} = props;
+  const {address, isConnected, handleConnectWallet} = props;
 
   return (
     <header>
@@ -22,7 +22,7 @@ function Header(props) {
           <img src={Eth} alt="eth" className="eth" />
           Ethereum
         </div>
-        <div className="connectButton" onClick={connect}>
+        <div className="connectButton" onClick={handleConnectWallet}>
           {isConnected ? (address.slice(0,4) +"..." +address.slice(-4)) : "Connect"}
         </div>
       </div>

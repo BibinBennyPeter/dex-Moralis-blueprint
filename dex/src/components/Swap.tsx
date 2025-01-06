@@ -1,39 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { Input, Popover, Radio, Modal, message } from "antd";
+import { Input, Popover, Radio, Modal, message, RadioChangeEvent } from "antd";
 import tokenList from "../tokenList.json";
+import axios from "axios";
 import {
   ArrowDownOutlined,
   DownOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
+interface SwapProps {
 
-function Swap() {
+  isConnected: boolean;
+
+  address: string | undefined;
+
+}
+
+
+
+const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
   const [slippage, setSlippage] = useState(2.5);
-  const [tokenOneAmount, setTokenOneAmount] = useState(null);
-  const [tokenTwoAmount, setTokenTwoAmount] = useState(null);
+  const [tokenOneAmount, setTokenOneAmount] = useState<string | number>("");
+  const [tokenTwoAmount, setTokenTwoAmount] = useState<string | null>(null);
   const [tokenOne, setTokenOne] = useState(tokenList[0]);
   const [tokenTwo, setTokenTwo] = useState(tokenList[1]);
   const [isOpen, setIsOpen] = useState(false);
   const [changeToken, setChangeToken] = useState(1);
-  const [prices, setPrices] = useState(null);
+  const [prices, setPrices] = useState<{ ratio: number } | null>(null);
 
-  function handleSlippageChange(e) {
+  function handleSlippageChange(e: RadioChangeEvent) {
     setSlippage(e.target.value);
   }
-  function changeAmount(e) {
+  function changeAmount(e: { target: { value: React.SetStateAction<string | number>; }; }) {
     setTokenOneAmount(e.target.value);
     if(e.target.value && prices){
-      setTokenTwoAmount((e.target.value * prices.ratio).toFixed(2))
+      setTokenTwoAmount((Number(e.target.value) * prices.ratio).toFixed(2));
     }else{
       setTokenTwoAmount(null);
     }
   }
-  function fetchPrices(token1, token2) {}
+  // async function fetchPrices(token1: string, token2: string) {
+  //   const prices = await axios.get("http://localhost:3001/tokenPrice",{params:{addressOne:token1,addresTwo:token2}})
+  //   console.log(prices);
+  //   }
+
+  async function fetchPrices(token1: string, token2: string) {
+    try {
+      const response = await axios.get("http://localhost:3001/tokenPrice", {
+        params: { addressOne: token1, addressTwo: token2 },
+      });
+      
+      setPrices({ ratio: response.data.ratio });
+    } catch (error) {
+      console.error("Error fetching token prices:", error);
+      message.error("Failed to fetch prices");
+    }
+  }
+    
   function fetchDexSwap() {}
 
   function switchTokens() {
     setPrices(null);
-    setTokenOneAmount(null);
+    setTokenOneAmount("");
     setTokenTwoAmount(null);
     const one = tokenOne;
     const two = tokenTwo;
@@ -41,14 +68,14 @@ function Swap() {
     setTokenTwo(one);
     fetchPrices(two.address, one.address);
   }
-  function openModal(asset) {
+  function openModal(asset: React.SetStateAction<number>) {
     setChangeToken(asset);
     setIsOpen(true);
   }
 
-  function modifyToken(i){
+  function modifyToken(i: number){
     setPrices(null);
-    setTokenOneAmount(null);
+    setTokenOneAmount("");
     setTokenTwoAmount(null);
     if (changeToken === 1) {
       setTokenOne(tokenList[i]);
@@ -59,6 +86,12 @@ function Swap() {
     }
     setIsOpen(false);
   }
+
+  useEffect(()=>{
+
+    fetchPrices(tokenList[0].address, tokenList[1].address)
+
+  }, [])
 
   const settings = (
     <>
@@ -118,7 +151,7 @@ function Swap() {
             onChange={changeAmount}
             disabled={!prices}
           />
-          <Input placeholder="0" value={tokenTwoAmount} disabled={true} />
+          <Input placeholder="0" value={tokenTwoAmount || ""} disabled={true} />
           <div className="switchButton" onClick={switchTokens}>
             <ArrowDownOutlined className="switchArrow" />
           </div>
@@ -133,8 +166,8 @@ function Swap() {
             <DownOutlined />
           </div>
         </div>
-        {/* <div className="swapButton" disabled={!tokenOneAmount || !isConnected} onClick={fetchDexSwap}>Swap</div> */}
-        <div className="swapButton" disabled={!tokenOneAmount} onClick={fetchDexSwap}>Swap</div>
+        {/* <div className="swapButton" disabled={!tokenOneAmount} onClick={fetchDexSwap}>Swap</div> */}
+        <button className="swapButton" disabled={!tokenOneAmount || !isConnected} onClick={fetchDexSwap}>Swap</button>
       </div>
       </>
   );
