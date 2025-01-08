@@ -2,22 +2,27 @@ import React, { useState, useEffect } from "react";
 import { Input, Popover, Radio, Modal, message, RadioChangeEvent } from "antd";
 import tokenList from "../tokenList.json";
 import axios from "axios";
+import { useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { parseEther } from 'viem';
 import {
   ArrowDownOutlined,
   DownOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
+
 interface SwapProps {
-
   isConnected: boolean;
-
   address: string | undefined;
-
 }
 
-
+type TxDetailsType = {
+  to?: `0x${string}` | null | undefined,
+  data?: `0x${string}` | undefined,
+  value?: bigint | undefined
+}
 
 const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
+  const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(2.5);
   const [tokenOneAmount, setTokenOneAmount] = useState<string | number>("");
   const [tokenTwoAmount, setTokenTwoAmount] = useState<string | null>(null);
@@ -26,6 +31,47 @@ const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [changeToken, setChangeToken] = useState(1);
   const [prices, setPrices] = useState<{ ratio: number } | null>(null);
+  const [txDetails, setTxDetails] = useState<TxDetailsType>({
+    to:null,
+    data: undefined,
+    value: undefined,
+  }); 
+
+  const {data, sendTransaction} = useSendTransaction();
+
+  const handleSendTransaction =()=>sendTransaction({
+        to: txDetails.to,
+        data: txDetails.data,
+        value: parseEther(String(txDetails.value)),
+    })
+  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
+    hash: data,
+  })
+
+  async function fetchDexSwap(){
+
+    const allowance = await axios.get(
+      `/api/swap/v6.0/1/approve/allowance?tokenAddress=${tokenOne.address}&walletAddress=${address}`)
+  
+    if(allowance.data.allowance === "0"){
+
+      const approve = await axios.get(`/api/swap/v6.0/1/approve/transaction?tokenAddress=${tokenOne.address}`)
+
+      setTxDetails(approve.data);
+      console.log("not approved")
+      return
+
+    }
+
+    const tx = await axios.get(
+      `/api/swap/v6.0/1/swap?srcTokenAddress=${tokenOne.address}&dstTokenAddress=${tokenTwo.address}&dstAmount=${tokenOneAmount.toString().padEnd(tokenOne.decimals+tokenOneAmount.toString().length, '0')}&fromAddress=${address}&slippage=${slippage}`)
+
+    let decimals = Number(`1E${tokenTwo.decimals}`)
+    setTokenTwoAmount((Number(tx.data.dstTokenAmount)/decimals).toFixed(2));
+
+    setTxDetails(tx.data.tx);
+  
+  }
 
   function handleSlippageChange(e: RadioChangeEvent) {
     setSlippage(e.target.value);
@@ -55,8 +101,6 @@ const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
       message.error("Failed to fetch prices");
     }
   }
-    
-  function fetchDexSwap() {}
 
   function switchTokens() {
     setPrices(null);
@@ -92,6 +136,46 @@ const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
     fetchPrices(tokenList[0].address, tokenList[1].address)
 
   }, [])
+  useEffect(()=>{
+
+    if(txDetails.to && isConnected){
+      handleSendTransaction();
+    }
+}, [txDetails])
+
+
+useEffect(()=>{
+
+  messageApi.destroy();
+
+  if(isLoading){
+    messageApi.open({
+      type: 'loading',
+      content: 'Transaction is Pending...',
+      duration: 0,
+    })
+  }    
+
+},[isLoading])
+
+
+useEffect(()=>{
+  messageApi.destroy();
+  if(isSuccess){
+    messageApi.open({
+      type: 'success',
+      content: 'Transaction Successful',
+      duration: 1.5,
+    })
+  }else if(txDetails.to){
+    messageApi.open({
+      type: 'error',
+      content: 'Transaction Failed',
+      duration: 1.50,
+    })
+  }
+
+},[isSuccess])
 
   const settings = (
     <>
@@ -108,6 +192,7 @@ const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
 
   return (
     <>
+    {contextHolder}
       <Modal
         open={isOpen}
         footer={null}
