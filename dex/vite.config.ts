@@ -11,4 +11,13 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  server:{
+    proxy: {
+      '/api':{
+        target: 'https://api.1inch.dev',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      }
+    }
+  }
 });
