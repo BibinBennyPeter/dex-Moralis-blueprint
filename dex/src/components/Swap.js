@@ -8,6 +8,9 @@ import {
 } from "@ant-design/icons";
 
 function Swap() {
+  const MIN_SLIPPAGE = 0.1;
+  const MAX_SLIPPAGE = 5.0;
+  
   const [slippage, setSlippage] = useState(2.5);
   const [tokenOneAmount, setTokenOneAmount] = useState(null);
   const [tokenTwoAmount, setTokenTwoAmount] = useState(null);
@@ -18,7 +21,10 @@ function Swap() {
   const [prices, setPrices] = useState(null);
 
   function handleSlippageChange(e) {
-    setSlippage(e.target.value);
+    if (!NaN(e.target.value)){
+      const slippage = parseFloat(e.target.value);
+      setSlippage(Math.min(Math.max(MIN_SLIPPAGE,slippage),MAX_SLIPPAGE));
+    }
   }
   function changeAmount(e) {
     setTokenOneAmount(e.target.value);
