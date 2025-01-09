@@ -18,6 +18,9 @@ interface SwapProps {
 
 
 const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
+  const MIN_SLIPPAGE = 0.1;
+  const MAX_SLIPPAGE = 5.0;
+  
   const [slippage, setSlippage] = useState(2.5);
   const [tokenOneAmount, setTokenOneAmount] = useState<string | number>("");
   const [tokenTwoAmount, setTokenTwoAmount] = useState<string | null>(null);
@@ -27,13 +30,19 @@ const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
   const [changeToken, setChangeToken] = useState(1);
   const [prices, setPrices] = useState<{ ratio: number } | null>(null);
 
-  function handleSlippageChange(e: RadioChangeEvent) {
-    setSlippage(e.target.value);
+  const handleSlippageChange = (e:RadioChangeEvent) => {
+    const slippage = parseFloat(e.target.value);
+    setSlippage(Math.min(Math.max(MIN_SLIPPAGE,slippage),MAX_SLIPPAGE));
   }
-  function changeAmount(e: { target: { value: React.SetStateAction<string | number>; }; }) {
-    setTokenOneAmount(e.target.value);
-    if(e.target.value && prices){
-      setTokenTwoAmount((Number(e.target.value) * prices.ratio).toFixed(2));
+  const changeAmount = (e : React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (isNaN(value)||value<0){
+      message.error("Please enter a valid amount");
+      return
+    }
+    setTokenOneAmount(value);
+    if(value && prices && prices.ratio > 0){
+      setTokenTwoAmount((value * prices.ratio).toFixed(2))
     }else{
       setTokenTwoAmount(null);
     }
@@ -58,7 +67,7 @@ const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
     
   function fetchDexSwap() {}
 
-  function switchTokens() {
+  const switchTokens = () => {
     setPrices(null);
     setTokenOneAmount("");
     setTokenTwoAmount(null);
@@ -68,21 +77,42 @@ const Swap: React.FC<SwapProps> = ({ isConnected, address }) => {
     setTokenTwo(one);
     fetchPrices(two.address, one.address);
   }
-  function openModal(asset: React.SetStateAction<number>) {
+  const openModal = (asset: React.SetStateAction<number>)=> {
     setChangeToken(asset);
     setIsOpen(true);
   }
 
-  function modifyToken(i: number){
-    setPrices(null);
-    setTokenOneAmount("");
-    setTokenTwoAmount(null);
+  const modifyToken = (i: number) => {
+
     if (changeToken === 1) {
-      setTokenOne(tokenList[i]);
-      fetchPrices(tokenList[i].address, tokenTwo.address)
-    } else {
-      setTokenTwo(tokenList[i]);
-      fetchPrices(tokenOne.address, tokenList[i].address)
+      if (tokenTwo === tokenList[i]){
+        message.error("Can't swap similar tokens");
+      }
+      else if(tokenOne === tokenList[i]){
+        message.info("Selected the same token.Please select another token")
+      }
+      else{
+        setPrices(null);
+        setTokenOneAmount("");
+        setTokenTwoAmount(null);
+        setTokenOne(tokenList[i]);
+        fetchPrices(tokenList[i].address, tokenTwo.address)
+      }
+    } 
+    else {
+      if(tokenOne === tokenList[i]){
+        message.error("Can't swap similar tokens");
+      }
+      else if(tokenTwo === tokenList[i]){
+        message.info("Selected the same token.Please select another token")
+      }
+      else{
+        setPrices(null);
+        setTokenOneAmount("");
+        setTokenTwoAmount(null);
+        setTokenTwo(tokenList[i]);
+        fetchPrices(tokenOne.address, tokenList[i].address)
+      }
     }
     setIsOpen(false);
   }
