@@ -27,9 +27,14 @@ function Swap() {
     }
   }
   function changeAmount(e) {
-    setTokenOneAmount(e.target.value);
-    if(e.target.value && prices){
-      setTokenTwoAmount((e.target.value * prices.ratio).toFixed(2))
+    const value = parseFloat(e.target.value);
+    if (isNaN(value)||value<0){
+      message.error("Please enter a valid amount");
+      return
+    }
+    setTokenOneAmount(value);
+    if(value && prices && prices.ratio > 0){
+      setTokenTwoAmount((value * prices.ratio).toFixed(2))
     }else{
       setTokenTwoAmount(null);
     }
