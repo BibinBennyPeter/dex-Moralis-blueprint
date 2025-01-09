@@ -53,15 +53,35 @@ function Swap() {
   }
 
   function modifyToken(i){
-    setPrices(null);
-    setTokenOneAmount(null);
-    setTokenTwoAmount(null);
     if (changeToken === 1) {
-      setTokenOne(tokenList[i]);
-      fetchPrices(tokenList[i].address, tokenTwo.address)
-    } else {
-      setTokenTwo(tokenList[i]);
-      fetchPrices(tokenOne.address, tokenList[i].address)
+      if (tokenTwo === tokenList[i]){
+        message.error("Can't swap similar tokens");
+      }
+      else if(tokenOne === tokenList[i]){
+        message.info("Selected the same token.Please select another token")
+      }
+      else{
+        setPrices(null);
+        setTokenOneAmount(null);
+        setTokenTwoAmount(null);
+        setTokenOne(tokenList[i]);
+        fetchPrices(tokenList[i].address, tokenTwo.address)
+      }
+    } 
+    else {
+      if(tokenOne === tokenList[i]){
+        message.error("Can't swap similar tokens");
+      }
+      else if(tokenTwo === tokenList[i]){
+        message.info("Selected the same token.Please select another token")
+      }
+      else{
+        setPrices(null);
+        setTokenOneAmount(null);
+        setTokenTwoAmount(null);
+        setTokenTwo(tokenList[i]);
+        fetchPrices(tokenOne.address, tokenList[i].address)
+      }
     }
     setIsOpen(false);
   }
