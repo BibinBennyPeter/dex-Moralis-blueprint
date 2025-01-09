@@ -20,13 +20,13 @@ function Swap() {
   const [changeToken, setChangeToken] = useState(1);
   const [prices, setPrices] = useState(null);
 
-  function handleSlippageChange(e) {
+  const handleSlippageChange = (e) => {
     if (!NaN(e.target.value)){
       const slippage = parseFloat(e.target.value);
       setSlippage(Math.min(Math.max(MIN_SLIPPAGE,slippage),MAX_SLIPPAGE));
     }
   }
-  function changeAmount(e) {
+  const changeAmount = (e) => {
     const value = parseFloat(e.target.value);
     if (isNaN(value)||value<0){
       message.error("Please enter a valid amount");
@@ -39,10 +39,10 @@ function Swap() {
       setTokenTwoAmount(null);
     }
   }
-  function fetchPrices(token1, token2) {}
-  function fetchDexSwap() {}
+  const fetchPrices = (token1, token2) => {}
+  const fetchDexSwap =()=> {}
 
-  function switchTokens() {
+  const switchTokens = () => {
     setPrices(null);
     setTokenOneAmount(null);
     setTokenTwoAmount(null);
@@ -52,12 +52,12 @@ function Swap() {
     setTokenTwo(one);
     fetchPrices(two.address, one.address);
   }
-  function openModal(asset) {
+  const openModal = (asset)=> {
     setChangeToken(asset);
     setIsOpen(true);
   }
 
-  function modifyToken(i){
+  const modifyToken = (i) =>{
     if (changeToken === 1) {
       if (tokenTwo === tokenList[i]){
         message.error("Can't swap similar tokens");
